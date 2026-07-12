@@ -67,4 +67,6 @@ dependencies {
     implementation("io.coil-kt:coil:2.6.0")
     // SVG (Vektörel) resimleri okuyabilmek için ek Coil paketi
     implementation("io.coil-kt:coil-svg:2.6.0")
+
+    implementation("org.jsoup:jsoup:1.17.2")
 }
