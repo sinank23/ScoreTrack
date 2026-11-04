@@ -2,6 +2,7 @@ package com.example.scoretrack
 
 import android.os.Bundle
 import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -9,10 +10,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.scoretrack.ui.MatchAdapter
 import com.example.scoretrack.ui.MatchViewModel
-import com.example.scoretrack.model.Match // Match modelini import etmeyi unutmuyoruz!
+import com.example.scoretrack.model.Match
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import android.content.Intent
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,24 +22,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var matchAdapter: MatchAdapter
     private var selectedCalendar: Calendar = Calendar.getInstance()
 
+    private lateinit var tvSelectedDate: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         setupRecyclerView()
         setupLiveSwitch()
+        setupDateNavigation()
         observeData()
 
         updateDateUIAndFetch()
     }
 
     private fun setupRecyclerView() {
-        // HATA 1 ÇÖZÜLDÜ: Senin XML'deki doğru ID'ni (rvMatches) girdik.
         val recyclerView = findViewById<RecyclerView>(R.id.rvMatches)
 
-        // HATA 2 ÇÖZÜLDÜ: Adapter'ın bizden sadece Int (Maç ID'si) beklediğini belirttik.
         matchAdapter = MatchAdapter(emptyList<Match>()) { matchId ->
-            Toast.makeText(this, "Maç ID: $matchId tıklandı", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, MatchDetailActivity::class.java)
+            intent.putExtra("FIXTURE_ID", matchId)
+            startActivity(intent)
         }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -55,10 +60,43 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupDateNavigation() {
+        tvSelectedDate = findViewById(R.id.tvSelectedDate)
+        val btnPrevDay = findViewById<TextView>(R.id.btnPrevDay)
+        val btnNextDay = findViewById<TextView>(R.id.btnNextDay)
+
+        btnPrevDay.setOnClickListener {
+            selectedCalendar.add(Calendar.DAY_OF_MONTH, -1)
+            updateDateUIAndFetch()
+        }
+
+        btnNextDay.setOnClickListener {
+            selectedCalendar.add(Calendar.DAY_OF_MONTH, 1)
+            updateDateUIAndFetch()
+        }
+    }
+
     private fun updateDateUIAndFetch() {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val dateString = dateFormat.format(selectedCalendar.time)
+        val apiDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateString = apiDateFormat.format(selectedCalendar.time)
+
+        tvSelectedDate.text = formatDisplayDate(selectedCalendar)
+
         viewModel.fetchMatchesByDate(dateString)
+    }
+
+    private fun formatDisplayDate(calendar: Calendar): String {
+        val today = Calendar.getInstance()
+
+        val isSameDay = calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+
+        return if (isSameDay) {
+            "BUGÜN"
+        } else {
+            val displayFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+            displayFormat.format(calendar.time)
+        }
     }
 
     private fun observeData() {

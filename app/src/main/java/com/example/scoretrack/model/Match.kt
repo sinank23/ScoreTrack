@@ -2,6 +2,7 @@ package com.example.scoretrack.model
 
 data class Match(
     val id: Int,
+    val apiMatchId: String,   // <-- YENİ: gerçek maç ID'si (detay sayfası için)
     val leagueName: String,
     val leagueFlag: String,
     val countryName: String,

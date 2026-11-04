@@ -16,8 +16,7 @@ import com.example.scoretrack.model.Match
 
 class MatchAdapter(
     private var matchList: List<Match>,
-    private val onMatchClick: (Int) -> Unit // <-- TIKLAMA SENSÖRÜ EKLENDİ
-) : RecyclerView.Adapter<MatchAdapter.MatchViewHolder>() {
+    private val onMatchClick: (String) -> Unit) : RecyclerView.Adapter<MatchAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val llLeagueHeader: LinearLayout = view.findViewById(R.id.llLeagueHeader)
@@ -56,12 +55,12 @@ class MatchAdapter(
         if (currentMatch.isLive) holder.tvScore.setTextColor(Color.RED)
         else holder.tvScore.setTextColor(Color.BLACK)
 
-        holder.ivHomeLogo.load(currentMatch.homeLogo) { crossfade(true) }
-        holder.ivAwayLogo.load(currentMatch.awayLogo) { crossfade(true) }
+        holder.ivHomeLogo.load(currentMatch.homeLogo, svgImageLoader) { crossfade(true) }
+        holder.ivAwayLogo.load(currentMatch.awayLogo, svgImageLoader) { crossfade(true) }
 
         // MAÇA TIKLANDIĞINDA ID'Yİ GÖNDERİYORUZ
         holder.itemView.setOnClickListener {
-            onMatchClick(currentMatch.id)
+            onMatchClick(currentMatch.apiMatchId)
         }
     }
 

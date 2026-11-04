@@ -16,7 +16,7 @@ class MatchDetailActivity : AppCompatActivity() {
 
     private val viewModel: MatchViewModel by viewModels()
     private lateinit var contentContainer: LinearLayout
-    private var fixtureId: Int = -1
+    private var fixtureId: String = ""
     private var currentTab = "EVENTS"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +52,7 @@ class MatchDetailActivity : AppCompatActivity() {
         mainLayout.addView(scrollView)
         setContentView(mainLayout)
 
-        fixtureId = intent.getIntExtra("FIXTURE_ID", -1)
+        fixtureId = intent.getStringExtra("FIXTURE_ID") ?: ""
 
         // Tıklama Olayları ve Geçici Ekranlar (Placeholder)
         btnEvents.setOnClickListener {
