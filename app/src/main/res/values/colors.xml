@@ -2,4 +2,14 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Uygulama renkleri (gündüz). Gece karşılıkları values-night/colors.xml içinde. -->
+    <color name="bg_page">#F2F3F5</color>
+    <color name="bg_surface">#FFFFFF</color>
+    <color name="bg_score">#F0F1F3</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="accent">#D32F2F</color>
+    <color name="live">#E53935</color>
+    <color name="red_card">#E53935</color>
 </resources>

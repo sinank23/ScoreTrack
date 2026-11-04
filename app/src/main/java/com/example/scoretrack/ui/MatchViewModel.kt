@@ -6,46 +6,74 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.scoretrack.data.MackolikRepository
 import com.example.scoretrack.model.Match
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.io.IOException
 
 class MatchViewModel : ViewModel() {
 
-    private val _matches = MutableLiveData<List<Match>>()
+    private val _matches = MutableLiveData<List<Match>>(emptyList())
     val matches: LiveData<List<Match>> get() = _matches
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> get() = _error
+    private val _loading = MutableLiveData(false)
+    val loading: LiveData<Boolean> get() = _loading
 
-    fun fetchMatchesByDate(date: String) {
-        viewModelScope.launch {
+    // Gösterildikten sonra clearError() ile temizlenir, ekran döndüğünde tekrar çıkmasın diye
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> get() = _error
+
+    private var allMatches: List<Match> = emptyList()
+    private var liveOnly = false
+    private var currentDate: String? = null
+    private var loadJob: Job? = null
+
+    val hasLoaded: Boolean get() = currentDate != null
+
+    fun loadDate(date: String) {
+        // Başka bir güne geçildiyse eski günün maçlarını hemen kaldır (yenilemede listeyi tut)
+        if (date != currentDate) {
+            allMatches = emptyList()
+            publish()
+        }
+        currentDate = date
+        // Hızlı hızlı gün değiştirilirse eski istek iptal edilir, yanlış günün maçları gelmez
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _loading.value = true
             try {
-                val fetchedMatches = withContext(Dispatchers.IO) {
-                    MackolikRepository.fetchMatches(date)
-                }
-                _matches.value = fetchedMatches
+                allMatches = MackolikRepository.fetchMatches(date)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                allMatches = emptyList()
+                _error.value = "İnternet bağlantısı kurulamadı. Tekrar deneyin."
             } catch (e: Exception) {
-                _error.value = "HATA: ${e.message}"
+                allMatches = emptyList()
+                _error.value = "Maçlar yüklenemedi: ${e.message}"
+            } finally {
+                // İptal edilen eski istek, yenisinin "yükleniyor" durumunu bozmasın
+                if (isActive) _loading.value = false
             }
+            publish()
         }
     }
 
-    fun fetchLiveMatches() {
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    fun refresh() {
+        currentDate?.let { loadDate(it) }
+    }
 
-        viewModelScope.launch {
-            try {
-                val fetchedMatches = withContext(Dispatchers.IO) {
-                    MackolikRepository.fetchMatches(today)
-                }
-                _matches.value = fetchedMatches.filter { it.isLive }
-            } catch (e: Exception) {
-                _error.value = "HATA: ${e.message}"
-            }
-        }
+    fun setLiveOnly(enabled: Boolean) {
+        liveOnly = enabled
+        publish()
+    }
+
+    fun clearError() {
+        _error.value = null
+    }
+
+    private fun publish() {
+        _matches.value = if (liveOnly) allMatches.filter { it.isLive } else allMatches
     }
 }
