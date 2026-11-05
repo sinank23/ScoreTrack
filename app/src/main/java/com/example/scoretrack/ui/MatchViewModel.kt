@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.scoretrack.data.MackolikRepository
 import com.example.scoretrack.model.Match
+import com.example.scoretrack.model.MatchState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -31,7 +32,8 @@ class MatchViewModel : ViewModel() {
 
     val hasLoaded: Boolean get() = currentDate != null
 
-    fun loadDate(date: String) {
+    // silent = true: otomatik yenileme. Hata olursa mesaj göstermez, eldeki listeyi korur.
+    fun loadDate(date: String, silent: Boolean = false) {
         // Başka bir güne geçildiyse eski günün maçlarını hemen kaldır (yenilemede listeyi tut)
         if (date != currentDate) {
             allMatches = emptyList()
@@ -47,11 +49,15 @@ class MatchViewModel : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                allMatches = emptyList()
-                _error.value = "İnternet bağlantısı kurulamadı. Tekrar deneyin."
+                if (!silent) {
+                    allMatches = emptyList()
+                    _error.value = "İnternet bağlantısı kurulamadı. Tekrar deneyin."
+                }
             } catch (e: Exception) {
-                allMatches = emptyList()
-                _error.value = "Maçlar yüklenemedi: ${e.message}"
+                if (!silent) {
+                    allMatches = emptyList()
+                    _error.value = "Maçlar yüklenemedi: ${e.message}"
+                }
             } finally {
                 // İptal edilen eski istek, yenisinin "yükleniyor" durumunu bozmasın
                 if (isActive) _loading.value = false
@@ -60,9 +66,16 @@ class MatchViewModel : ViewModel() {
         }
     }
 
-    fun refresh() {
-        currentDate?.let { loadDate(it) }
+    fun refresh(silent: Boolean = false) {
+        currentDate?.let { loadDate(it, silent) }
     }
+
+    // Otomatik yenileme gerekiyor mu? Oynanan ya da başlamak üzere olan maç varsa evet.
+    fun needsAutoRefresh(now: Long = System.currentTimeMillis()): Boolean =
+        allMatches.any { match ->
+            match.isLive ||
+                    (match.state == MatchState.SCHEDULED && match.kickoffMillis in 1..(now + 60_000))
+        }
 
     fun setLiveOnly(enabled: Boolean) {
         liveOnly = enabled

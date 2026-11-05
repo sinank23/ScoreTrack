@@ -2,6 +2,7 @@ package com.example.scoretrack.data
 
 import com.example.scoretrack.model.EventKind
 import com.example.scoretrack.model.KeyEventDto
+import com.example.scoretrack.model.LiveHeader
 import com.example.scoretrack.model.LiveScoreData
 import com.example.scoretrack.model.Match
 import com.example.scoretrack.model.MatchDto
@@ -161,5 +162,13 @@ object MackolikRepository {
     suspend fun fetchLineups(matchId: String): MatchLineups? = withContext(Dispatchers.IO) {
         val html = RetrofitClient.mackolikApi.getMatchPage(matchId).string()
         LineupParser.parse(html)
+    }
+
+    // ---------------- CANLI BAŞLIK ----------------
+
+    // Detay ekranındaki skor ve dakikayı güncellemek için
+    suspend fun fetchLiveHeader(matchId: String): LiveHeader? = withContext(Dispatchers.IO) {
+        val response = RetrofitClient.mackolikApi.getMatchHeader(matchId = matchId)
+        response.data?.html?.let { MatchHeaderParser.parse(it) }
     }
 }

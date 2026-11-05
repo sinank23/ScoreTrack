@@ -15,14 +15,20 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import coil.load
 import com.example.scoretrack.model.EventKind
+import com.example.scoretrack.model.LiveHeader
 import com.example.scoretrack.model.Match
 import com.example.scoretrack.model.MatchEvent
 import com.example.scoretrack.ui.LineupRenderer
 import com.example.scoretrack.ui.LineupState
 import com.example.scoretrack.ui.MatchDetailViewModel
 import com.example.scoretrack.util.MatchStatusFormatter
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MatchDetailActivity : AppCompatActivity() {
 
@@ -35,9 +41,10 @@ class MatchDetailActivity : AppCompatActivity() {
     private lateinit var tabLineups: TextView
 
     private var matchId: String = ""
-    private var showingEvents = true
     private var homeName: String = ""
     private var awayName: String = ""
+    private var showingEvents = true
+    private var isLive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +59,7 @@ class MatchDetailActivity : AppCompatActivity() {
         matchId = intent.getStringExtra(EXTRA_ID).orEmpty()
         homeName = intent.getStringExtra(EXTRA_HOME).orEmpty()
         awayName = intent.getStringExtra(EXTRA_AWAY).orEmpty()
+        isLive = intent.getBooleanExtra(EXTRA_IS_LIVE, false)
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         bindHeader()
@@ -64,6 +72,38 @@ class MatchDetailActivity : AppCompatActivity() {
         if (savedInstanceState == null || viewModel.events.value == null) {
             viewModel.loadEvents(matchId)
         }
+        startLiveRefresh()
+    }
+
+    // Maç canlıysa ekran açıkken her 30 saniyede skor, dakika ve olayları yenile.
+    // Maç biterse döngü durur; uygulama arka plana geçince de duraklar.
+    private fun startLiveRefresh() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isLive) {
+                    delay(LIVE_REFRESH_MS)
+                    viewModel.refreshLive(matchId)
+                }
+            }
+        }
+    }
+
+    private fun bindLiveHeader(header: LiveHeader) {
+        if (!header.hasStarted) return
+        isLive = header.isLive
+
+        val color = ContextCompat.getColor(this, if (header.isLive) R.color.live else R.color.text_primary)
+        val statusColor = ContextCompat.getColor(this, if (header.isLive) R.color.live else R.color.text_secondary)
+
+        findViewById<TextView>(R.id.tvScore).apply {
+            text = "${header.homeScore} - ${header.awayScore}"
+            setTextColor(color)
+        }
+        findViewById<TextView>(R.id.tvStatus).apply {
+            text = header.status
+            setTextColor(statusColor)
+        }
+        findViewById<TextView>(R.id.tvExtra).text = header.detail.orEmpty()
     }
 
     // ---------------- ÜST KISIM ----------------
@@ -76,7 +116,6 @@ class MatchDetailActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.ivHomeLogo).load(i.getStringExtra(EXTRA_HOME_LOGO))
         findViewById<ImageView>(R.id.ivAwayLogo).load(i.getStringExtra(EXTRA_AWAY_LOGO))
 
-        val isLive = i.getBooleanExtra(EXTRA_IS_LIVE, false)
         val liveColor = ContextCompat.getColor(this, R.color.live)
 
         findViewById<TextView>(R.id.tvScore).apply {
@@ -111,6 +150,8 @@ class MatchDetailActivity : AppCompatActivity() {
     private fun observeData() {
         viewModel.events.observe(this) { if (showingEvents) render() }
         viewModel.lineups.observe(this) { if (!showingEvents) render() }
+        viewModel.header.observe(this) { header -> header?.let { bindLiveHeader(it) } }
+
         viewModel.error.observe(this) { msg ->
             if (!msg.isNullOrEmpty()) {
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
@@ -216,6 +257,7 @@ class MatchDetailActivity : AppCompatActivity() {
         private const val EXTRA_STATUS = "STATUS"
         private const val EXTRA_EXTRA = "EXTRA"
         private const val EXTRA_IS_LIVE = "IS_LIVE"
+        private const val LIVE_REFRESH_MS = 30_000L
 
         // Listeden detaya geçerken maçın üst bilgilerini de taşıyoruz,
         // böylece başlık anında dolu görünüyor.

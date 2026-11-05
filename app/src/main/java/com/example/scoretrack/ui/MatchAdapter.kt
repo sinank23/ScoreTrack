@@ -51,6 +51,11 @@ class MatchAdapter(
         submitList(items)
     }
 
+    // Canlı maçların dakikasını yeniler (sadece durum yazısı değişir, logolar tekrar yüklenmez)
+    fun tickLiveMinutes() {
+        if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_TICK)
+    }
+
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
         is MatchListItem.Header -> TYPE_HEADER
         is MatchListItem.Row -> TYPE_MATCH
@@ -69,6 +74,15 @@ class MatchAdapter(
         when (val item = getItem(position)) {
             is MatchListItem.Header -> (holder as HeaderViewHolder).bind(item)
             is MatchListItem.Row -> (holder as MatchViewHolder).bind(item.match, onMatchClick)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        val item = getItem(position)
+        if (payloads.contains(PAYLOAD_TICK) && holder is MatchViewHolder && item is MatchListItem.Row) {
+            holder.bindStatus(item.match)
+        } else {
+            onBindViewHolder(holder, position)
         }
     }
 
@@ -99,15 +113,12 @@ class MatchAdapter(
         fun bind(match: Match, onClick: (Match) -> Unit) {
             val context = itemView.context
             val primary = ContextCompat.getColor(context, R.color.text_primary)
-            val secondary = ContextCompat.getColor(context, R.color.text_secondary)
             val live = ContextCompat.getColor(context, R.color.live)
 
             tvHome.text = match.homeTeam
             tvAway.text = match.awayTeam
 
-            // Durum sütunu
-            tvStatus.text = MatchStatusFormatter.statusText(match)
-            tvStatus.setTextColor(if (match.isLive) live else secondary)
+            bindStatus(match)
 
             // Skor
             tvScore.text = if (match.hasScore) "${match.homeScore} - ${match.awayScore}" else "-"
@@ -135,6 +146,15 @@ class MatchAdapter(
             itemView.setOnClickListener { onClick(match) }
         }
 
+        // Durum sütunu: 21:45 / 67' / İY / MS
+        fun bindStatus(match: Match) {
+            val context = itemView.context
+            val secondary = ContextCompat.getColor(context, R.color.text_secondary)
+            val live = ContextCompat.getColor(context, R.color.live)
+            tvStatus.text = MatchStatusFormatter.statusText(match)
+            tvStatus.setTextColor(if (match.isLive) live else secondary)
+        }
+
         private fun bindRedCards(view: TextView, count: Int) {
             view.visibility = if (count > 0) View.VISIBLE else View.GONE
             view.text = if (count > 1) count.toString() else ""
@@ -156,6 +176,7 @@ class MatchAdapter(
     companion object {
         private const val TYPE_HEADER = 0
         private const val TYPE_MATCH = 1
+        private const val PAYLOAD_TICK = "tick"
 
         private val DIFF = object : DiffUtil.ItemCallback<MatchListItem>() {
             override fun areItemsTheSame(oldItem: MatchListItem, newItem: MatchListItem): Boolean =

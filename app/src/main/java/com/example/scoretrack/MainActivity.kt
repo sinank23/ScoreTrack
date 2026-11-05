@@ -1,6 +1,5 @@
 package com.example.scoretrack
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
@@ -8,12 +7,19 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.scoretrack.ui.MatchAdapter
 import com.example.scoretrack.ui.MatchViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.materialswitch.MaterialSwitch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -30,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var progress: ProgressBar
     private lateinit var switchLive: MaterialSwitch
+    private lateinit var swipeRefresh: SwipeRefreshLayout
 
     private val turkish = Locale("tr", "TR")
 
@@ -46,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         tvEmpty = findViewById(R.id.tvEmpty)
         progress = findViewById(R.id.progress)
         switchLive = findViewById(R.id.switchLive)
+        swipeRefresh = findViewById(R.id.swipeRefresh)
 
         if (savedInstanceState != null) {
             selectedCalendar.timeInMillis = savedInstanceState.getLong(KEY_DATE, selectedCalendar.timeInMillis)
@@ -54,7 +62,9 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupDateNavigation()
         setupLiveSwitch()
+        setupSwipeRefresh()
         observeData()
+        startAutoRefresh()
 
         // Ekran döndüğünde ViewModel veriyi zaten tutuyor, tekrar çekmeye gerek yok
         if (savedInstanceState == null || !viewModel.hasLoaded) loadSelectedDate() else updateDateLabels()
@@ -115,6 +125,30 @@ class MainActivity : AppCompatActivity() {
         picker.show(supportFragmentManager, "date_picker")
     }
 
+    private fun setupSwipeRefresh() {
+        swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.accent))
+        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
+    }
+
+    // Uygulama ekrandayken her 30 saniyede bir:
+    //  - bugünün listesinde canlı / başlamak üzere maç varsa Mackolik'ten sessizce yenile
+    //  - canlı maçların dakikasını ilerlet
+    // Uygulama arka plana geçince (onStop) döngü kendiliğinden durur, geri gelince tekrar başlar.
+    private fun startAutoRefresh() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    // Uygulamaya geri dönülünce de ilk iş hemen yenileniyor
+                    if (isToday(selectedCalendar) && viewModel.needsAutoRefresh()) {
+                        viewModel.refresh(silent = true)
+                    }
+                    matchAdapter.tickLiveMinutes()
+                    delay(AUTO_REFRESH_MS)
+                }
+            }
+        }
+    }
+
     private fun setupLiveSwitch() {
         switchLive.setOnCheckedChangeListener { _, isChecked ->
             viewModel.setLiveOnly(isChecked)
@@ -171,6 +205,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.loading.observe(this) { isLoading ->
+            if (!isLoading) swipeRefresh.isRefreshing = false
             // Liste doluyken (yenilemede) ortada dönen çark göstermiyoruz
             progress.visibility =
                 if (isLoading && viewModel.matches.value.isNullOrEmpty()) View.VISIBLE else View.GONE
@@ -194,5 +229,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val KEY_DATE = "selected_date"
+        private const val AUTO_REFRESH_MS = 30_000L
     }
 }

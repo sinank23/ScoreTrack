@@ -65,4 +65,11 @@ dependencies {
     implementation("io.coil-kt:coil-svg:2.6.0")
     // Maç sayfasının HTML'inden kadroları okumak için
     implementation("org.jsoup:jsoup:1.17.2")
+
+
+    // Arka plandayken durup ön plana gelince devam eden otomatik yenileme (repeatOnLifecycle)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    // Aşağı çekip yenileme
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }

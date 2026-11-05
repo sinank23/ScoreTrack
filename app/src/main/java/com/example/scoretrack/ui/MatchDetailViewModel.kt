@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.scoretrack.data.MackolikRepository
+import com.example.scoretrack.model.LiveHeader
 import com.example.scoretrack.model.MatchEvent
 import com.example.scoretrack.model.MatchLineups
 import kotlinx.coroutines.launch
@@ -27,6 +28,10 @@ class MatchDetailViewModel : ViewModel() {
     // null = henüz istenmedi (kadrolar sekmesine ilk geçişte yüklenir)
     private val _lineups = MutableLiveData<LineupState?>()
     val lineups: LiveData<LineupState?> get() = _lineups
+
+    // Canlı maçta güncel skor ve dakika (null = henüz güncelleme yok, listeden gelen bilgi kullanılır)
+    private val _header = MutableLiveData<LiveHeader?>()
+    val header: LiveData<LiveHeader?> get() = _header
 
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> get() = _error
@@ -59,6 +64,19 @@ class MatchDetailViewModel : ViewModel() {
                 LineupState.Failed("İnternet bağlantısı kurulamadı.")
             } catch (e: Exception) {
                 LineupState.Failed("Kadrolar yüklenemedi: ${e.message}")
+            }
+        }
+    }
+
+    // Canlı maçta skor/dakika ve olayları sessizce yeniler.
+    // Hata olursa mesaj göstermez, ekrandakiyle devam eder.
+    fun refreshLive(matchId: String) {
+        viewModelScope.launch {
+            try {
+                MackolikRepository.fetchLiveHeader(matchId)?.let { _header.value = it }
+                _events.value = MackolikRepository.fetchMatchEvents(matchId)
+            } catch (e: Exception) {
+                // sessiz yenileme
             }
         }
     }
