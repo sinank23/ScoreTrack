@@ -110,7 +110,18 @@ class MatchDetailActivity : AppCompatActivity() {
 
     private fun bindHeader() {
         val i = intent
-        findViewById<TextView>(R.id.tvLeague).text = i.getStringExtra(EXTRA_LEAGUE)
+        // Lig adına dokununca puan durumu açılır, bu maçın iki takımı vurgulanır
+        findViewById<TextView>(R.id.tvLeague).apply {
+            text = "${i.getStringExtra(EXTRA_LEAGUE)}  ›"
+            setOnClickListener {
+                StandingsActivity.start(
+                    this@MatchDetailActivity,
+                    competitionId = i.getStringExtra(EXTRA_COMPETITION_ID).orEmpty(),
+                    leagueName = i.getStringExtra(EXTRA_LEAGUE_NAME).orEmpty(),
+                    highlightTeams = listOf(homeName, awayName)
+                )
+            }
+        }
         findViewById<TextView>(R.id.tvHomeTeam).text = i.getStringExtra(EXTRA_HOME)
         findViewById<TextView>(R.id.tvAwayTeam).text = i.getStringExtra(EXTRA_AWAY)
         findViewById<ImageView>(R.id.ivHomeLogo).load(i.getStringExtra(EXTRA_HOME_LOGO))
@@ -258,6 +269,8 @@ class MatchDetailActivity : AppCompatActivity() {
         private const val EXTRA_EXTRA = "EXTRA"
         private const val EXTRA_IS_LIVE = "IS_LIVE"
         private const val LIVE_REFRESH_MS = 30_000L
+        private const val EXTRA_COMPETITION_ID = "COMPETITION_ID"
+        private const val EXTRA_LEAGUE_NAME = "LEAGUE_NAME"
 
         // Listeden detaya geçerken maçın üst bilgilerini de taşıyoruz,
         // böylece başlık anında dolu görünüyor.
@@ -274,6 +287,8 @@ class MatchDetailActivity : AppCompatActivity() {
                 putExtra(EXTRA_STATUS, MatchStatusFormatter.statusText(match))
                 putExtra(EXTRA_EXTRA, MatchStatusFormatter.extraInfo(match))
                 putExtra(EXTRA_IS_LIVE, match.isLive)
+                putExtra(EXTRA_COMPETITION_ID, match.competitionId)
+                putExtra(EXTRA_LEAGUE_NAME, match.leagueName)
             }
             context.startActivity(intent)
         }

@@ -13,6 +13,7 @@ import com.example.scoretrack.model.SidesIntDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import com.example.scoretrack.model.LeagueTable
 
 object MackolikRepository {
 
@@ -170,5 +171,16 @@ object MackolikRepository {
     suspend fun fetchLiveHeader(matchId: String): LiveHeader? = withContext(Dispatchers.IO) {
         val response = RetrofitClient.mackolikApi.getMatchHeader(matchId = matchId)
         response.data?.html?.let { MatchHeaderParser.parse(it) }
+    }
+
+
+    // ---------------- PUAN DURUMU ----------------
+
+    // Kupalarda (puan tablosu yoksa) null döner
+    suspend fun fetchStandings(competitionId: String): LeagueTable? = withContext(Dispatchers.IO) {
+        val response = RetrofitClient.mackolikApi.getStandingsPage(competitionId)
+        if (response.code() == 404) return@withContext null
+        if (!response.isSuccessful) throw IOException("Puan durumu alınamadı (${response.code()})")
+        response.body()?.string()?.let { StandingsParser.parse(it) }
     }
 }

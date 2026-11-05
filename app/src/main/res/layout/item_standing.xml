@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Puan tablosunda tek satır -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="9dp"
+    android:paddingEnd="8dp">
+
+    <!-- Sol kenardaki renkli şerit (Şampiyonlar Ligi, küme düşme ...) -->
+    <View
+        android:id="@+id/vZone"
+        android:layout_width="4dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="4dp" />
+
+    <TextView
+        android:id="@+id/tvRank"
+        style="@style/StandingCell"
+        android:layout_width="28dp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/ivLogo"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/tvTeam"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp" />
+
+    <TextView android:id="@+id/tvPlayed" style="@style/StandingCell" android:layout_width="26dp" />
+    <TextView android:id="@+id/tvWon" style="@style/StandingCell" android:layout_width="26dp" />
+    <TextView android:id="@+id/tvDrawn" style="@style/StandingCell" android:layout_width="26dp" />
+    <TextView android:id="@+id/tvLost" style="@style/StandingCell" android:layout_width="26dp" />
+    <TextView android:id="@+id/tvDiff" style="@style/StandingCell" android:layout_width="34dp" />
+
+    <TextView
+        android:id="@+id/tvPoints"
+        style="@style/StandingCell"
+        android:layout_width="32dp"
+        android:textStyle="bold" />
+</LinearLayout>

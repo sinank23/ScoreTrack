@@ -30,7 +30,8 @@ sealed class MatchListItem {
 }
 
 class MatchAdapter(
-    private val onMatchClick: (Match) -> Unit
+    private val onMatchClick: (Match) -> Unit,
+    private val onLeagueClick: (MatchListItem.Header) -> Unit
 ) : ListAdapter<MatchListItem, RecyclerView.ViewHolder>(DIFF) {
 
     fun submitMatches(matches: List<Match>) {
@@ -72,7 +73,7 @@ class MatchAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is MatchListItem.Header -> (holder as HeaderViewHolder).bind(item)
+            is MatchListItem.Header -> (holder as HeaderViewHolder).bind(item, onLeagueClick)
             is MatchListItem.Row -> (holder as MatchViewHolder).bind(item.match, onMatchClick)
         }
     }
@@ -91,11 +92,13 @@ class MatchAdapter(
         private val tvCountry: TextView = view.findViewById(R.id.tvCountry)
         private val tvLeague: TextView = view.findViewById(R.id.tvLeagueName)
 
-        fun bind(header: MatchListItem.Header) {
+        fun bind(header: MatchListItem.Header, onClick: (MatchListItem.Header) -> Unit) {
             tvLeague.text = header.leagueName
             tvCountry.text = header.countryName
             tvCountry.visibility = if (header.countryName.isEmpty()) View.GONE else View.VISIBLE
             ivFlag.load(header.flagUrl)
+            // Lig başlığına dokununca puan durumu açılır
+            itemView.setOnClickListener { onClick(header) }
         }
     }
 

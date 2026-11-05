@@ -7,6 +7,7 @@ import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.Response
 
 interface MackolikApiService {
 
@@ -37,4 +38,10 @@ interface MackolikApiService {
         @Query("displayMode") displayMode: String = "all",
         @Query("sdapiLanguageCode") language: String = "tr-mk"
     ): MatchHeaderResponse
+
+
+    // Puan durumu sayfası (tablo bu sayfanın HTML'inde). Adresteki "lig-puan" kısmı önemsiz,
+    // Mackolik sadece sondaki lig kimliğine bakıyor. Kupalarda tablo olmadığı için 404 döner.
+    @GET("puan-durumu/lig-puan/{competitionId}")
+    suspend fun getStandingsPage(@Path("competitionId") competitionId: String): Response<ResponseBody>
 }

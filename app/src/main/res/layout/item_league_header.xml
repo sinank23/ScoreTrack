@@ -5,6 +5,7 @@
     android:layout_marginHorizontal="16dp"
     android:layout_marginTop="16dp"
     android:layout_marginBottom="4dp"
+    android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
@@ -34,4 +35,13 @@
         android:textColor="@color/accent"
         android:textSize="15sp"
         android:textStyle="bold" />
+
+    <!-- Dokununca puan durumu açıldığını belli etmek için -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:text="Tablo ›"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
 </LinearLayout>

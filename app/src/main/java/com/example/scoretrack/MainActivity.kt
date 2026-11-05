@@ -76,9 +76,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        matchAdapter = MatchAdapter { match ->
-            MatchDetailActivity.start(this, match)
-        }
+        matchAdapter = MatchAdapter(
+            onMatchClick = { match -> MatchDetailActivity.start(this, match) },
+            onLeagueClick = { header ->
+                StandingsActivity.start(this, header.competitionId, header.leagueName)
+            }
+        )
         findViewById<RecyclerView>(R.id.rvMatches).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = matchAdapter
