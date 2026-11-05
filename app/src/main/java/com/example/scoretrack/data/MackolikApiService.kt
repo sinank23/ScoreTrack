@@ -8,6 +8,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.Response
+import retrofit2.http.Url
 
 interface MackolikApiService {
 
@@ -44,4 +45,9 @@ interface MackolikApiService {
     // Mackolik sadece sondaki lig kimliğine bakıyor. Kupalarda tablo olmadığı için 404 döner.
     @GET("puan-durumu/lig-puan/{competitionId}")
     suspend fun getStandingsPage(@Path("competitionId") competitionId: String): Response<ResponseBody>
+
+
+    // Tam adresi verilen herhangi bir Mackolik sayfası (oyuncu profili gibi)
+    @GET
+    suspend fun getPage(@Url url: String): ResponseBody
 }

@@ -4,15 +4,20 @@ import android.content.Context
 import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import coil.load
+import coil.transform.CircleCropTransformation
+import com.example.scoretrack.PlayerProfileActivity
 import com.example.scoretrack.R
 import com.example.scoretrack.model.MatchLineups
 import com.example.scoretrack.model.SquadPlayer
 import com.example.scoretrack.model.TeamLineup
 
 // Kadrolar sekmesini çizer: önce saha dizilişi, sonra iki takımın listeleri.
+// Sahadaki yuvarlaklara ya da listedeki oyunculara dokununca oyuncu profili açılır.
 object LineupRenderer {
 
     fun render(
@@ -30,6 +35,9 @@ object LineupRenderer {
                     homeLabel = label(homeName, lineups.home.formation),
                     awayLabel = label(awayName, lineups.away.formation)
                 )
+                onPlayerClick = { player ->
+                    player.profileUrl?.let { PlayerProfileActivity.start(context, it, player.name) }
+                }
             }
             container.addView(pitch)
         }
@@ -77,19 +85,28 @@ object LineupRenderer {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(context, 4), dp(context, 6), dp(context, 4), dp(context, 6))
 
+            // Oyuncu fotoğrafı (yuvarlak)
+            addView(ImageView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(context, 32), dp(context, 32)).apply {
+                    marginEnd = dp(context, 6)
+                }
+                if (player.photo != null) {
+                    load(player.photo) { transformations(CircleCropTransformation()) }
+                }
+            })
             addView(TextView(context).apply {
                 text = player.number
                 textSize = 13f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(primary)
                 gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(dp(context, 32), LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(dp(context, 28), LinearLayout.LayoutParams.WRAP_CONTENT)
             })
             addView(TextView(context).apply {
                 text = player.position
                 textSize = 12f
                 setTextColor(secondary)
-                layoutParams = LinearLayout.LayoutParams(dp(context, 36), LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(dp(context, 34), LinearLayout.LayoutParams.WRAP_CONTENT)
             })
             addView(TextView(context).apply {
                 text = player.name
@@ -102,6 +119,14 @@ object LineupRenderer {
                 textSize = 12f
                 setTextColor(secondary)
             })
+
+            // Profili olan oyunculara dokunulabilsin
+            player.profileUrl?.let { url ->
+                val outValue = android.util.TypedValue()
+                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
+                setBackgroundResource(outValue.resourceId)
+                setOnClickListener { PlayerProfileActivity.start(context, url, player.name) }
+            }
         }
     }
 

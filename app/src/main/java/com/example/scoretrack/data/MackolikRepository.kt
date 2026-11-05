@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import com.example.scoretrack.model.LeagueTable
+import com.example.scoretrack.model.PlayerProfile
 
 object MackolikRepository {
 
@@ -182,5 +183,14 @@ object MackolikRepository {
         if (response.code() == 404) return@withContext null
         if (!response.isSuccessful) throw IOException("Puan durumu alınamadı (${response.code()})")
         response.body()?.string()?.let { StandingsParser.parse(it) }
+    }
+
+
+    // ---------------- OYUNCU PROFİLİ ----------------
+
+    // profileUrl: kadrodan gelen tam adres, ör. https://www.mackolik.com/futbolcu/a-batrakov/6pgpc...
+    suspend fun fetchPlayer(profileUrl: String): PlayerProfile? = withContext(Dispatchers.IO) {
+        val html = RetrofitClient.mackolikApi.getPage(profileUrl).string()
+        PlayerParser.parse(html)
     }
 }

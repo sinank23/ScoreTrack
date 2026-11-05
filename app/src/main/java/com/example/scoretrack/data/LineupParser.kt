@@ -50,11 +50,16 @@ object LineupParser {
             substitutes = subsBlock?.let { rows(it, side) }.orEmpty()
         )
 
-        return MatchLineups(
-            home = team("home", formations.getOrNull(0)),
-            away = team("away", formations.getOrNull(1)),
-            pitch = pitch
-        )
+        val home = team("home", formations.getOrNull(0))
+        val away = team("away", formations.getOrNull(1))
+
+        // Sahadaki oyunculara profil adresini ilk 11 listesinden (aynı forma numarası) bul
+        val pitchWithLinks = pitch.map { p ->
+            val starters = if (p.isHome) home.starters else away.starters
+            p.copy(profileUrl = starters.firstOrNull { it.number == p.number }?.profileUrl)
+        }
+
+        return MatchLineups(home = home, away = away, pitch = pitchWithLinks)
     }
 
     private fun rows(block: Element, side: String): List<SquadPlayer> =
@@ -64,7 +69,11 @@ object LineupParser {
                 name = row.selectFirst(".widget-match-stats__person-name")?.text().orEmpty(),
                 position = row.selectFirst(".widget-match-stats__cell--person-position")?.text()
                     ?.takeIf { it != "-" }.orEmpty(),
-                notes = row.select(".widget-match-stats__icon").mapNotNull { eventText(it) }.joinToString("  ")
+                notes = row.select(".widget-match-stats__icon").mapNotNull { eventText(it) }.joinToString("  "),
+                profileUrl = row.selectFirst(".widget-match-stats__person-name")?.attr("href")
+                    ?.takeIf { it.contains("/futbolcu/") },
+                photo = row.attr("data-person-id").takeIf { it.isNotEmpty() }
+                    ?.let { "https://file.mackolikfeeds.com/people/$it" }
             )
         }
 

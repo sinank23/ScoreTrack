@@ -8,7 +8,8 @@ data class PitchPlayer(
     val number: String,
     val name: String,
     val x: Float,
-    val y: Float
+    val y: Float,
+    val profileUrl: String? = null   // dokununca oyuncu profili açılsın diye
 )
 
 // Kadro listesindeki bir oyuncu
@@ -16,7 +17,9 @@ data class SquadPlayer(
     val number: String,
     val name: String,
     val position: String,   // Kal, Def, Ort, For (yedeklerde boş)
-    val notes: String       // "⚽x2  ↓77'" gibi
+    val notes: String,      // "⚽x2  ↓77'" gibi
+    val profileUrl: String? = null,  // Mackolik oyuncu sayfası (teknik direktörde null)
+    val photo: String? = null
 )
 
 data class TeamLineup(

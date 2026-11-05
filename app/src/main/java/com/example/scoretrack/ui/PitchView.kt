@@ -11,6 +11,8 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import com.example.scoretrack.R
 import com.example.scoretrack.model.PitchPlayer
+import android.graphics.PointF
+import android.view.MotionEvent
 
 // Dikey yeşil saha: ev sahibi aşağıda, deplasman yukarıda.
 // Oyuncuların yerleri Mackolik'in kendi diziliş çiziminden geliyor.
@@ -20,6 +22,12 @@ class PitchView @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     private var players: List<PitchPlayer> = emptyList()
+
+    // Bir oyuncunun yuvarlağına dokunulunca çağrılır
+    var onPlayerClick: ((PitchPlayer) -> Unit)? = null
+
+    // Çizim sırasında her oyuncunun ekrandaki yeri, dokunmayı bulmak için
+    private val drawnPositions = mutableListOf<Pair<PitchPlayer, PointF>>()
     private var homeLabel = ""
     private var awayLabel = ""
 
@@ -112,12 +120,14 @@ class PitchView @JvmOverloads constructor(
         canvas.drawRect(cx - smallW / 2, field.bottom - smallH, cx + smallW / 2, field.bottom, linePaint)
 
         // Oyuncular
+        drawnPositions.clear()
         val radius = dp(13f)
         val maxNameWidth = fw / 4.5f
         for (p in players) {
             // Mackolik'in yatay sahasını 90° çevirip dikey yapıyoruz
             val px = field.left + p.y * fw
             val py = field.top + (1f - p.x) * fh
+            drawnPositions += p to PointF(px, py)
 
             canvas.drawCircle(px, py, radius, if (p.isHome) homePaint else awayPaint)
             canvas.drawCircle(px, py, radius, ringPaint)
@@ -128,6 +138,30 @@ class PitchView @JvmOverloads constructor(
         }
     }
 
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (onPlayerClick == null) return super.onTouchEvent(event)
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> return true
+            MotionEvent.ACTION_UP -> {
+                // Parmağa en yakın oyuncuyu bul (yuvarlağın biraz dışına basılsa da kabul et)
+                val touchRadius = dp(26f)
+                val hit = drawnPositions.minByOrNull { (_, pos) ->
+                    (pos.x - event.x) * (pos.x - event.x) + (pos.y - event.y) * (pos.y - event.y)
+                }?.takeIf { (_, pos) ->
+                    (pos.x - event.x) * (pos.x - event.x) + (pos.y - event.y) * (pos.y - event.y) <= touchRadius * touchRadius
+                }
+                if (hit != null) {
+                    performClick()
+                    onPlayerClick?.invoke(hit.first)
+                }
+                return true
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
+    override fun performClick(): Boolean = super.performClick()
     // "Abdülkerim Bardakcı" sığmazsa "Bardakcı" yaz
     private fun shortName(name: String, maxWidth: Float): String {
         if (namePaint.measureText(name) <= maxWidth) return name
